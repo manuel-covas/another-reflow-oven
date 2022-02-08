@@ -1,6 +1,6 @@
 # another-reflow-oven
-
-That's right, if all of the existing arduino-based DIY reflow ovens somehow don't work for you, you can always give another reflow oven a shot.
+A DIY, Arduino-based, PID controlled reflow oven.\
+That's right, if all of the existing ones don't work out you can always give another reflow oven a shot.
 
 # Dependencies
 

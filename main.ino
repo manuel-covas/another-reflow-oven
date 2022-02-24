@@ -1,34 +1,73 @@
+#include <stdio.h>
 #include <math.h>
 #include <max6675.h>
 
 #include "temperature_profiles/GenericPasteProfile.h"
 
 
+#define SNPRINTF_BUFFER_SIZE 500
+#define FREQUENCY_MEASUREING_TIME_MS 4 * 1000
+
+
+/**
+ * Board Connections
+**/
+
 // Zero crossing detection (active-low) pin number
 
-const uint8_t zero_crossing_detect_pin = 2;
+const uint8_t zero_crossing_detect_pin = PIN2;
+const uint8_t triac_trigger_pin = PIN6;
 
 // MAX6675 Pin number connections
 
-const uint8_t serial_clock_pin = 3;
-const uint8_t chip_select_pin = 4;
-const uint8_t slave_out_pin = 5;
+const uint8_t serial_clock_pin = PIN3;
+const uint8_t chip_select_pin = PIN4;
+const uint8_t slave_out_pin = PIN5;
+
+
 
 // Temperature sensor interface (MAX6675 library by Adafruit)
 
-MAX6675 max6675_chip = MAX6675(serial_clock_pin,
-                               chip_select_pin,
-                               slave_out_pin);
+MAX6675 max6675_chip = MAX6675(serial_clock_pin, chip_select_pin, slave_out_pin);
 
 
+// Mains frequency
+
+uint16_t count;
+uint16_t frequency;
+
+// Zero-crossing ISR to measure mains frequency
+
+void measureFrequencyISR() { count++; }
+
+
+// snprintf output buffer
+char sprintf_buffer[SNPRINTF_BUFFER_SIZE];
 
 void setup() {
 
-    // Set power level to zero.
-    ;
+    // Open serial connection.
+    Serial.begin(9600);
+    
+    // Configure pins
 
-    // Enable pull-up resistors on zero crossing detect and attach ISR.
-    pinMode(zero_crossing_detect_pin, INPUT_PULLUP);
+    Serial.print("Configuring pins...");
+
+    pinMode(zero_crossing_detect_pin, INPUT_PULLUP); // Enable pull-up resistors on zero crossing detect.
+    pinMode(triac_trigger_pin, OUTPUT);              // Set TRIAC trigger as output.
+    digitalWrite(triac_trigger_pin, LOW);            // Make sure TRIAC trigger is off.
+
+    // Measure mains frequency
+    snprintf(sprintf_buffer, SNPRINTF_BUFFER_SIZE, "Measuring mains frequecy... (%f seconds)", FREQUENCY_MEASUREING_TIME_MS / 1000);
+
+    attachInterrupt(digitalPinToInterrupt(zero_crossing_detect_pin), measureFrequencyISR, FALLING);
+    delay(FREQUENCY_MEASUREING_TIME_MS);
+    detachInterrupt(digitalPinToInterrupt(zero_crossing_detect_pin));
+
+    frequency = count / (FREQUENCY_MEASUREING_TIME_MS * 2);
+
+    // Set power level to zero
+    
     attachInterrupt(digitalPinToInterrupt(zero_crossing_detect_pin), zeroCrossingISR, FALLING);
 
     // Open serial connection.
@@ -52,36 +91,6 @@ void loop() {
     // Wait for next reading.
 
     delay(250);
-}
-
-
-/**
- * @brief Computes and sets the on-time for each mains half-cycle that corresponds to the specified relative power.
- * @param relative_power The desired relative power. Range: 0.0 to 1.0
- **/
-void setRelativePower(float relative_power) {
-
-    // Constrain input to range.
-    if (relative_power < 0) relative_power = 0;
-    if (relative_power > 1) relative_power = 1;
-
-    /*
-        We will activate the TRIAC at a calculated offset from each zero-crossing in order to apply
-        the target relative power.
-
-        By Ohm's Law we have that Power = V²R which means that power is linearly porpotional to V².
-
-        Taking mains voltage as V = sin(t*f*2π), the integral of one full half-cycle comes out as
-        ∫sin(t*f*2π)² dt from zero to 1/2f and corresponds to full power.
-
-        The definite integral ∫sin(t*f*2π)² from an offset t to the end of the half cycle is:
-
-        P(t) = 1 - 2ft + sin(tf4π)/2π
-
-        Finally, we can write the following:
-    */
-
-   
 }
 
 

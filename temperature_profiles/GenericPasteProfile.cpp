@@ -11,6 +11,9 @@ const float         REFLOW_STAGE_CELCIUS  = 248;
 const unsigned long REFLOW_STAGE_START_MS = 240 * 1000;
 const unsigned long REFLOW_STAGE_END_MS   = 270 * 1000;
 
+
+const char* GenericPasteProfile::getName() { return "Generic Solder Paste"; }
+
 float GenericPasteProfile::computeTemperature(unsigned long time_ms) {
 
     // Pre-start

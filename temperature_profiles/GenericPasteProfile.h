@@ -5,6 +5,12 @@
 
 class GenericPasteProfile : public TemperatureProfile {
     public:
+        
+        /**
+         * @returns This temperature profile's name.
+         **/
+        const char* getName();
+
         /**
          * @brief Returns the target temperature in celcius for the given time.
          * @param time_ns The current time in milliseconds with respect to this profile's start time.

@@ -1,13 +1,15 @@
 #include <stdio.h>
 #include <math.h>
 #include <max6675.h>
+#include <avr/io.h>
 
+#include "triac_phase_control/TimerISR.h"
 #include "temperature_profiles/GenericPasteProfile.h"
 
 
 #define SNPRINTF_BUFFER_SIZE 500
 #define FREQUENCY_MEASUREING_TIME_MS 4 * 1000
-
+#define TRIAC_PULSE_DURATION_US 250
 
 /**
  * Board Connections
@@ -36,9 +38,43 @@ MAX6675 max6675_chip = MAX6675(serial_clock_pin, chip_select_pin, slave_out_pin)
 uint16_t count;
 uint16_t frequency;
 
-// Zero-crossing ISR to measure mains frequency
+void measureFrequencyISR() { count++; } // Counter ISR
 
-void measureFrequencyISR() { count++; }
+
+// Triac phase control
+
+volatile unsigned int zero_crossing_delay_us = 0;
+volatile bool no_power = true;
+
+void triacPhaseControlISR() {
+    
+    // Do not trigger triac
+    if (no_power) return;
+
+    // Schedule triac activation
+    Timer1ISR::setHandler(&startTriacPulseISR);
+    Timer1ISR::scheduleOneShot(zero_crossing_delay_us);
+}
+
+
+// Starts triac pulse
+
+void startTriacPulseISR() {
+    
+    // Set pin high.
+    digitalWrite(triac_trigger_pin, HIGH);
+
+    // Schedule end of pulse.
+    Timer1ISR::setHandler(&endTriacPulseISR);
+    Timer1ISR::scheduleOneShot(TRIAC_PULSE_DURATION_US);
+}
+
+
+// Ends triac pulse
+
+void endTriacPulseISR() {
+    digitalWrite(triac_trigger_pin, LOW);  // Set pin low.
+}
 
 
 // snprintf output buffer
@@ -46,13 +82,14 @@ char sprintf_buffer[SNPRINTF_BUFFER_SIZE];
 
 void setup() {
 
-    // Open serial connection.
+    // Configure Timer1
+    Timer1ISR::setup();
+
+    // Open serial connection
     Serial.begin(9600);
     
     // Configure pins
-
-    Serial.print("Configuring pins...");
-
+    
     pinMode(zero_crossing_detect_pin, INPUT_PULLUP); // Enable pull-up resistors on zero crossing detect.
     pinMode(triac_trigger_pin, OUTPUT);              // Set TRIAC trigger as output.
     digitalWrite(triac_trigger_pin, LOW);            // Make sure TRIAC trigger is off.
@@ -66,16 +103,20 @@ void setup() {
 
     frequency = count / (FREQUENCY_MEASUREING_TIME_MS * 2);
 
-    // Set power level to zero
-    
-    attachInterrupt(digitalPinToInterrupt(zero_crossing_detect_pin), zeroCrossingISR, FALLING);
+    // Attach triac phase control ISR
+    attachInterrupt(digitalPinToInterrupt(zero_crossing_detect_pin), triacPhaseControlISR, FALLING);
 
     // Open serial connection.
     Serial.begin(9600);
     
-    // MAX6675 stabilize time.
+    // MAX6675 initialization time
     delay(500);
+
+    start_millis = millis();
 }
+
+
+unsigned long start_millis;
 
 void loop() {
     
@@ -93,9 +134,3 @@ void loop() {
     delay(250);
 }
 
-
-double mainsFrequency = -1;
-
-void zeroCrossingISR() {
-
-}

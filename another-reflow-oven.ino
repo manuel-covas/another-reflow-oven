@@ -3,13 +3,17 @@
 #include <max6675.h>
 #include <avr/io.h>
 
-#include "triac_phase_control/TimerISR.h"
-#include "temperature_profiles/GenericPasteProfile.h"
+#include "src/triac_phase_control/TimerISR.h"
+#include "src/temperature_profiles/GenericPasteProfile.h"
 
 
 #define SNPRINTF_BUFFER_SIZE 500
 #define FREQUENCY_MEASUREING_TIME_MS 4 * 1000
 #define TRIAC_PULSE_DURATION_US 250
+
+// snprintf output buffer
+char sprintf_buffer[SNPRINTF_BUFFER_SIZE];
+
 
 /**
  * Board Connections
@@ -77,8 +81,7 @@ void endTriacPulseISR() {
 }
 
 
-// snprintf output buffer
-char sprintf_buffer[SNPRINTF_BUFFER_SIZE];
+unsigned long start_millis;
 
 void setup() {
 
@@ -115,8 +118,6 @@ void setup() {
     start_millis = millis();
 }
 
-
-unsigned long start_millis;
 
 void loop() {
     

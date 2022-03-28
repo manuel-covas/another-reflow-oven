@@ -1,7 +1,12 @@
-#include "TimerISR.h"
 #include "avr/io.h"
+#include "avr/interrupt.h"
+#include "TimerISR.h"
+
 
 const float CPU_CLOCK_PERIOD_US = 1000000 * (float) 1 / F_CPU;
+
+// Pointer to interrupt handler
+void (*isr_handler)();
 
 
 /**
@@ -39,7 +44,7 @@ void Timer1ISR::setup() {
  * @param handler the ISR handler
  */
 void Timer1ISR::setHandler(void (*handler)()) {
-    Timer1ISR::isr_handler = handler;
+    isr_handler = handler;
 }
 
 
@@ -70,7 +75,7 @@ void Timer1ISR::handleISR() {
     TCCR1B = (1 << WGM12);
 
     // Call scheduled handler
-    (*(Timer1ISR::isr_handler))();
+    (*(isr_handler))();
 }
 
 

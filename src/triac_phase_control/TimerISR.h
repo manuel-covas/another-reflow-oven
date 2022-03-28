@@ -11,7 +11,6 @@ class Timer1ISR {
     private:
         Timer1ISR()  {};
         ~Timer1ISR() {};
-        static void (*isr_handler)();
 };
 
 #endif

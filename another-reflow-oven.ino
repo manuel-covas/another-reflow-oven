@@ -5,6 +5,8 @@
 
 #include "src/triac_phase_control/TimerISR.h"
 #include "src/temperature_profiles/GenericPasteProfile.h"
+#include "src/pid_control/PIDControl.h"
+#include "src/triac_phase_control/PowerLevel.h"
 
 
 #define SNPRINTF_BUFFER_SIZE 500
@@ -40,7 +42,7 @@ MAX6675 max6675_chip = MAX6675(serial_clock_pin, chip_select_pin, slave_out_pin)
 // Mains frequency
 
 uint16_t count;
-uint16_t frequency;
+uint16_t mains_frequency;
 
 void measureFrequencyISR() { count++; } // Counter ISR
 
@@ -49,6 +51,7 @@ void measureFrequencyISR() { count++; } // Counter ISR
 
 volatile unsigned int zero_crossing_delay_us = 0;
 volatile bool no_power = true;
+
 
 void triacPhaseControlISR() {
     
@@ -81,6 +84,15 @@ void endTriacPulseISR() {
 }
 
 
+// PID Control instance
+
+PIDControl pidControl;
+
+// Temperature profile instance
+
+GenericPasteProfile temperature_profile;
+
+
 unsigned long start_millis;
 
 void setup() {
@@ -98,13 +110,14 @@ void setup() {
     digitalWrite(triac_trigger_pin, LOW);            // Make sure TRIAC trigger is off.
 
     // Measure mains frequency
+
     snprintf(sprintf_buffer, SNPRINTF_BUFFER_SIZE, "Measuring mains frequecy... (%f seconds)", FREQUENCY_MEASUREING_TIME_MS / 1000);
 
     attachInterrupt(digitalPinToInterrupt(zero_crossing_detect_pin), measureFrequencyISR, FALLING);
     delay(FREQUENCY_MEASUREING_TIME_MS);
     detachInterrupt(digitalPinToInterrupt(zero_crossing_detect_pin));
 
-    frequency = count / (FREQUENCY_MEASUREING_TIME_MS * 2);
+    mains_frequency = count / (FREQUENCY_MEASUREING_TIME_MS * 2);
 
     // Attach triac phase control ISR
     attachInterrupt(digitalPinToInterrupt(zero_crossing_detect_pin), triacPhaseControlISR, FALLING);
@@ -112,26 +125,48 @@ void setup() {
     // Open serial connection.
     Serial.begin(9600);
     
+    // Initialize PID instance
+    pidControl = PIDControl(0.25, 0, 0);
+
     // MAX6675 initialization time
     delay(500);
 
     start_millis = millis();
+
+    Serial.println("Starting profile.");
 }
 
+
+unsigned int last_time_ms = 0;
 
 void loop() {
     
-    float timeSeconds = (millis() - start_millis) / 1000.0f;
+    float time_ms = millis() - start_millis;
+    float temperature = max6675_chip.readCelsius();
+    float target_temperature = temperature_profile.computeTemperature(time_ms);
 
     // Print CSV line.
 
-    Serial.print(timeSeconds);
+    Serial.print(time_ms);
     Serial.print(",");
-    Serial.print(max6675_chip.readCelsius());
+    Serial.print(temperature);
+    Serial.print(",");
+    Serial.print(target_temperature);
     Serial.println();
 
-    // Wait for next reading.
+    pidControl.setTarget(target_temperature);
 
+    float new_power_level = pidControl.iterate(time_ms - last_time_ms, temperature);
+
+    if (new_power_level <= 0) {
+        no_power = true;
+    }else{
+        no_power = false;
+        zero_crossing_delay_us = calculateDelay(new_power_level, mains_frequency);
+    }
+
+    last_time_ms = time_ms;
+    
+    // Wait for next reading.
     delay(250);
 }
-

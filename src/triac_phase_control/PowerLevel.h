@@ -3,6 +3,6 @@
 
 #include <stdint.h>
 
-unsigned int calculateDelay(double power, float frequency);
+unsigned int calculateDelay(double power, float mains_frequency);
 
 #endif

@@ -130,10 +130,10 @@ const float delay_lookup_table[] = {
 /**
  * Calculates the required zero-crossing delay to achieve a target relative power. 
  * @param power     The target relative power. (0.0 to 1.0)
- * @param frequency Mains frequency
+ * @param mains_frequency Mains frequency
  * @returns The calculated delay, in microseconds.
  **/
-unsigned int calculateDelay(double relative_power, float frequency) {
+unsigned int calculateDelay(double relative_power, float mains_frequency) {
     
     // Constrain input to range.
     if (relative_power <= 0) relative_power = 0.01;
@@ -141,5 +141,5 @@ unsigned int calculateDelay(double relative_power, float frequency) {
 
     uint8_t index = relative_power * 100 - 1;
 
-    return 1000000 * (delay_lookup_table[index] / (2 * frequency));
+    return 1000000 * (delay_lookup_table[index] / (2 * mains_frequency));
 }

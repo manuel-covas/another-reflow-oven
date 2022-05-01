@@ -52,6 +52,15 @@ void measureFrequencyISR() { count++; } // Counter ISR
 volatile unsigned int zero_crossing_delay_us = 0;
 volatile bool no_power = true;
 
+void setPower(float new_power_level) {
+    if (new_power_level <= 0) {
+        no_power = true;
+    }else{
+        no_power = false;
+        zero_crossing_delay_us = calculateDelay(new_power_level, mains_frequency);
+    }
+}
+
 
 void triacPhaseControlISR() {
     
@@ -84,13 +93,8 @@ void endTriacPulseISR() {
 }
 
 
-// PID Control instance
-
-PIDControl pidControl;
-
-// Temperature profile instance
-
-GenericPasteProfile temperature_profile;
+PIDControl pidControl;                    // PID Control instance
+GenericPasteProfile temperature_profile;  // Temperature profile instance
 
 
 unsigned long start_millis;
@@ -119,6 +123,9 @@ void setup() {
 
     mains_frequency = count / (FREQUENCY_MEASUREING_TIME_MS * 2);
 
+    // Set power to zero
+    setPower(0);
+
     // Attach triac phase control ISR
     attachInterrupt(digitalPinToInterrupt(zero_crossing_detect_pin), triacPhaseControlISR, FALLING);
 
@@ -132,7 +139,9 @@ void setup() {
     delay(500);
 
     start_millis = millis();
-
+    
+    Serial.println("Waiting...");
+    delay(10 * 1000);
     Serial.println("Starting profile.");
 }
 
@@ -154,16 +163,11 @@ void loop() {
     Serial.print(target_temperature);
     Serial.println();
 
+    // Update PID target value.
     pidControl.setTarget(target_temperature);
 
-    float new_power_level = pidControl.iterate(time_ms - last_time_ms, temperature);
-
-    if (new_power_level <= 0) {
-        no_power = true;
-    }else{
-        no_power = false;
-        zero_crossing_delay_us = calculateDelay(new_power_level, mains_frequency);
-    }
+    // Update TRIAC phase control.
+    setPower(pidControl.iterate(time_ms - last_time_ms, temperature));
 
     last_time_ms = time_ms;
     

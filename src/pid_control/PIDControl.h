@@ -28,7 +28,7 @@ class PIDControl {
             this->target = 0;
 
             this->integral_value = 0;
-            this->last_sample_value = NULL;
+            this->last_sample_value = -1;
         };
         ~PIDControl() {};
 

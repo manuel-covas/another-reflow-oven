@@ -93,7 +93,7 @@ void endTriacPulseISR() {
 }
 
 
-PIDControl pidControl;                    // PID Control instance
+PIDControl pidControl(0.25, 0, 0);        // PID Control instance
 GenericPasteProfile temperature_profile;  // Temperature profile instance
 
 
@@ -132,9 +132,6 @@ void setup() {
     // Open serial connection.
     Serial.begin(9600);
     
-    // Initialize PID instance
-    pidControl = PIDControl(0.25, 0, 0);
-
     // MAX6675 initialization time
     delay(500);
 

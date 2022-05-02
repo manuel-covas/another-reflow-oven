@@ -22,7 +22,7 @@ float PIDControl::iterate(unsigned int delta_t, float new_value) {
         i_component = 0;
     }else{
 
-        if (this->last_sample_value == NULL) {
+        if (this->last_sample_value == -1) {
             // No previous sample to integrate from.
             i_component = 0;
         }else{

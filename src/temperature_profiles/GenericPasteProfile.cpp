@@ -1,15 +1,15 @@
 #include "GenericPasteProfile.h"
 
 const unsigned long PROFILE_START_MS = 0;
-const unsigned long PROFILE_END_MS   = 360 * 1000;
+const unsigned long PROFILE_END_MS   = 360000;
 
-const float         SOAK_STAGE_CELCIUS  = 150;
-const unsigned long SOAK_STAGE_START_MS = 90 * 1000;
-const unsigned long SOAK_STAGE_END_MS   = 180 * 1000;
+const float         SOAK_STAGE_CELCIUS  = 150.0;
+const unsigned long SOAK_STAGE_START_MS = 90000;
+const unsigned long SOAK_STAGE_END_MS   = 180000;
 
 const float         REFLOW_STAGE_CELCIUS  = 248;
-const unsigned long REFLOW_STAGE_START_MS = 240 * 1000;
-const unsigned long REFLOW_STAGE_END_MS   = 270 * 1000;
+const unsigned long REFLOW_STAGE_START_MS = 240000;
+const unsigned long REFLOW_STAGE_END_MS   = 270000;
 
 
 const char* GenericPasteProfile::getName() { return "Generic Solder Paste"; }
@@ -36,10 +36,6 @@ float GenericPasteProfile::computeTemperature(unsigned long time_ms) {
     if (time_ms < REFLOW_STAGE_END_MS)
         return REFLOW_STAGE_CELCIUS;
 
-    // Linear slope to zero
-    if (time_ms < PROFILE_END_MS)
-        return REFLOW_STAGE_CELCIUS * (1 - ((float) (time_ms - REFLOW_STAGE_END_MS) / (PROFILE_END_MS - REFLOW_STAGE_END_MS)));
-
-    // Profile ended
+    // Cooldown
     return 0;
 }

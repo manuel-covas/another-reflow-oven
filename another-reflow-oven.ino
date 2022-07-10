@@ -139,8 +139,9 @@ void setup() {
     delay(500);
     
     Serial.println("Waiting...");
-    delay(10 * 1000);
+    delay(3 * 1000);
     Serial.println("Starting profile.");
+    Serial.println("time_ms,temperature,target_temperature,target_power");
 
     start_millis = millis();
 }
@@ -154,20 +155,22 @@ void loop() {
     float temperature = max6675_chip.readCelsius();
     float target_temperature = temperature_profile.computeTemperature(time_ms);
 
-    // Print CSV line.
+    // Update PID target value.
+    pidControl.setTarget(target_temperature);
 
+    // Update TRIAC phase control.
+    float target_power = pidControl.iterate(time_ms - last_time_ms, temperature);
+    setPower(target_power);
+
+    // Print CSV line.
     Serial.print(time_ms);
     Serial.print(",");
     Serial.print(temperature);
     Serial.print(",");
     Serial.print(target_temperature);
+    Serial.print(",");
+    Serial.print(target_power);
     Serial.println();
-
-    // Update PID target value.
-    pidControl.setTarget(target_temperature);
-
-    // Update TRIAC phase control.
-    setPower(pidControl.iterate(time_ms - last_time_ms, temperature));
 
     last_time_ms = time_ms;
     

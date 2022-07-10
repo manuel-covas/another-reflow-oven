@@ -1,9 +1,15 @@
 #include "avr/io.h"
 #include "avr/interrupt.h"
 #include "TimerISR.h"
+#include <HardwareSerial.h>
 
 
 const float CPU_CLOCK_PERIOD_US = 1000000 * (float) 1 / F_CPU;
+
+const uint16_t CLOCK_PRESCALER_VALUES[5] = {
+    1, 8, 64, 256, 1024
+};
+
 
 // Pointer to interrupt handler
 void (*isr_handler)();
@@ -54,15 +60,45 @@ void Timer1ISR::setHandler(void (*handler)()) {
  * @param delay_us delay to schedule ISR for in microseconds
  */
 void Timer1ISR::scheduleOneShot(unsigned int delay_us) {
+
+    uint8_t CS_BITS = 1;
+
+    // Check for overflows and set clock prescaling accordingly
+
+    uint64_t timer_target_count;
+    
+    while (true) {
+        
+        timer_target_count = delay_us / (CPU_CLOCK_PERIOD_US * CLOCK_PRESCALER_VALUES[CS_BITS - 1]);
+
+        if (timer_target_count <= 0xFFFF) {
+            break;  // No prescaling required
+        }else{
+
+            // Overflow detected, step up prescaler and retry
+
+            // Check if max prescaling has been reached
+            if (CS_BITS == 0b101) {
+                Serial.println("// TODO: Chain multiple calls of handleISR() together in order to count unlimitedly.\n\r         Contribute if you can :)\n");
+                Serial.println("!  Timer 1 isn't large enough to count up to this value! (maybe split into smaller intervals?)");
+                Serial.println("!  Refer to the ATmega328P datasheet, page 110, Table 15-6 (Clock Select Bit Description)");
+                Serial.println("!  No interrupt was scheduled.\n");
+                return;
+            }
+
+            // Increment Counter Select value and loop to recalculate
+            CS_BITS++;
+        }
+    }
     
     // Set target value for Output Compare Unit A
-    OCR1A = delay_us / CPU_CLOCK_PERIOD_US;
+    OCR1A = timer_target_count;
 
     // Reset Timer1
     TCNT1 = 0;
 
     // Start timer
-    TCCR1B = (TCCR1B | (1 << CS10));
+    TCCR1B = (TCCR1B | (CS_BITS << CS10));
 }
 
 

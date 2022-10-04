@@ -93,7 +93,7 @@ void endTriacPulseISR() {
 }
 
 
-PIDControl pidControl(0.25, 0, 0);        // PID Control instance
+PIDControl pidControl(0.25, 0, -.5);        // PID Control instance
 GenericPasteProfile temperature_profile;  // Temperature profile instance
 
 
@@ -141,7 +141,7 @@ void setup() {
     Serial.println("Waiting...");
     delay(3 * 1000);
     Serial.println("Starting profile.");
-    Serial.println("time_ms,temperature,target_temperature,target_power");
+    Serial.println("time_ms,temperature,target_temperature,p_component,i_component,d_component,target_power");
 
     start_millis = millis();
 }
@@ -168,6 +168,12 @@ void loop() {
     Serial.print(temperature);
     Serial.print(",");
     Serial.print(target_temperature);
+    Serial.print(",");
+    Serial.print(pidControl.getPcomponent());
+    Serial.print(",");
+    Serial.print(pidControl.getIcomponent());
+    Serial.print(",");
+    Serial.print(pidControl.getDcomponent());
     Serial.print(",");
     Serial.print(target_power);
     Serial.println();

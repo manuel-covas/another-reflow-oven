@@ -4,13 +4,13 @@
 class PIDControl {
     
     private:
-        float p_coefficient;
-        float i_coefficient;
-        float d_coefficient;
+        float p_coefficient, i_coefficient, d_coefficient;
         float target;
 
         float integral_value;
         float last_sample_value;
+
+        float p_component, i_component, d_component;
 
     public:
 
@@ -46,9 +46,31 @@ class PIDControl {
          * 
          * @param delta_t how much time has passed since the last aquisition in any unit.
          * @param current_value the newly aquired value.
-         * @return float 
+         * @return the new target power.
          */
         float iterate(unsigned int delta_t, float current_value);
+        
+
+        /**
+         * @brief Returns the current value of the proportional component.
+         * 
+         * @return value of the proportional component.
+         */
+        float getPcomponent();
+        
+        /**
+         * @brief Returns the current value of the integral component.
+         * 
+         * @return value of the integral component.
+         */
+        float getIcomponent();
+
+        /**
+         * @brief Returns the current value of the derivative component.
+         * 
+         * @return value of the derivative component.
+         */
+        float getDcomponent();
 };
 
 #endif

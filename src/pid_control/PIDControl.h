@@ -44,7 +44,7 @@ class PIDControl {
         /**
          * @brief Ierate algorithm with a newly aquired value.
          * 
-         * @param delta_t how much time has passed since the last aquisition in any unit.
+         * @param delta_t how much time has passed since the last aquisition in milliseconds.
          * @param current_value the newly aquired value.
          * @return the new target power.
          */

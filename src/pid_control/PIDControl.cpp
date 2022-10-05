@@ -44,7 +44,7 @@ float PIDControl::iterate(unsigned int delta_t, float new_value) {
     if (this->d_coefficient == 0) {
         this->d_component = 0;
     }else{
-        this->d_component = (new_value - last_sample_value) / delta_t;
+        this->d_component = (new_value - last_sample_value) / (delta_t / 1000);
     }
 
     // Update last value

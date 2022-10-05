@@ -93,7 +93,7 @@ void endTriacPulseISR() {
 }
 
 
-PIDControl pidControl(0.25, 0, -.5);        // PID Control instance
+PIDControl pidControl(0.6, 0, -.3);        // PID Control instance
 GenericPasteProfile temperature_profile;  // Temperature profile instance
 
 

@@ -93,7 +93,7 @@ void endTriacPulseISR() {
 }
 
 
-PIDControl pidControl(0.6, 0, -.3);        // PID Control instance
+PIDControl pidControl(0.5, 0, -2.25, 10);     // PID Control instance
 GenericPasteProfile temperature_profile;  // Temperature profile instance
 
 
@@ -147,8 +147,6 @@ void setup() {
 }
 
 
-unsigned int last_time_ms = 0;
-
 void loop() {
     
     unsigned long time_ms = millis() - start_millis;
@@ -159,7 +157,7 @@ void loop() {
     pidControl.setTarget(target_temperature);
 
     // Update TRIAC phase control.
-    float target_power = pidControl.iterate(time_ms - last_time_ms, temperature);
+    float target_power = pidControl.iterate(time_ms, temperature);
     setPower(target_power);
 
     // Print CSV line.
@@ -169,16 +167,14 @@ void loop() {
     Serial.print(",");
     Serial.print(target_temperature);
     Serial.print(",");
-    Serial.print(pidControl.getPcomponent());
+    Serial.print(pidControl.getPvalue());
     Serial.print(",");
-    Serial.print(pidControl.getIcomponent());
+    Serial.print(pidControl.getIvalue());
     Serial.print(",");
-    Serial.print(pidControl.getDcomponent());
+    Serial.print(pidControl.getDvalue());
     Serial.print(",");
     Serial.print(target_power);
     Serial.println();
-
-    last_time_ms = time_ms;
     
     // Wait for next reading.
     delay(250);
